@@ -1,20 +1,40 @@
 #!/bin/bash
 
-# Verifica se a versão foi fornecida
 if [ $# -ne 1 ]; then
-    echo "Uso: $0 <versão> (exemplo: 6.8.2)"
-    exit 1
+  echo "Uso: $0 <versão> (exemplo: 6.8.2)"
+  exit 1
 fi
 
-# Extrai as versões curta e longa
 LONG_VERSION="$1"
 SHORT_VERSION=$(echo "$LONG_VERSION" | cut -d. -f1,2)
 
-# Constroi a URL
-URL="https://download.qt.io/official_releases/qt/${SHORT_VERSION}/${LONG_VERSION}/single/qt-everywhere-src-${LONG_VERSION}.tar.xz"
+NAMES=(
+  "qt-everywhere-src"
+  "qt-everywhere-opensource-src"
+)
 
-# Faz o download usando wget
-echo "Iniciando download da versão $LONG_VERSION..."
-wget "$URL"
+downloaded_file=""
 
-echo "Download concluído!"
+# Verifica se algum arquivo já existe ou tenta baixar sequencialmente
+for name in "${NAMES[@]}"; do
+  filename="${name}-${LONG_VERSION}.tar.xz"
+  
+  if [ -f "$filename" ]; then
+    echo "Arquivo já existe: $filename"
+    downloaded_file="$filename"
+    break
+  else
+    if wget "https://download.qt.io/official_releases/qt/${SHORT_VERSION}/${LONG_VERSION}/single/$filename"; then
+      echo "Download concluído: $filename"
+      downloaded_file="$filename"
+      break
+    else
+      echo "Falha ao baixar $filename, tentando próximo..."
+    fi
+  fi
+done
+
+if [ -z "$downloaded_file" ]; then
+  echo "Erro: Não foi possível baixar nenhum arquivo."
+  exit 1
+fi
